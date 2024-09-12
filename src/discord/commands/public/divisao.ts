@@ -22,7 +22,7 @@ client.on("messageCreate", async (message: Message) => {
           try {
             await message.delete(); // Apaga a mensagem original
             await channel.send("———————————————————————————————————"); // Envia a nova mensagem
-            console.log(`Mensagem contendo "DIV" apagada e substituída por "———————————————————————————————————" no canal ${channel.name} (ID: ${channel.id}), Categoria: ${category.name}`);
+      
           } catch (error) {
             console.error("Erro ao apagar mensagem ou enviar nova mensagem:", error);
           }

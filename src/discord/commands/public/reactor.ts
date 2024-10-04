@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, Message } from "discord.js";
 
-const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 4);
+const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
 
 const client = new Client({
@@ -18,7 +18,7 @@ client.once("ready", () => {
 
 client.on("messageCreate", async (message: Message) => {
   if (message.guild) {
-    const messageAuthorIdStart = message.author.id.substring(0, 4);
+    const messageAuthorIdStart = message.author.id.substring(0, 2);
     
     if (messageAuthorIdStart === TARGET_USER_ID) {
       const channel = message.channel;

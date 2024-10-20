@@ -19,13 +19,14 @@
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
     "fast-glob": "^3.3.2",
-    "puppeteer": "^23.5.3",
+    "puppeteer": "^23.6.0",
     "radix3": "^1.1.2",
     "reactiontweet": "file:",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
+    "@types/puppeteer": "^5.4.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",

@@ -6,7 +6,7 @@ import {
   TextChannel,
   NewsChannel,
 } from "discord.js";
-import puppeteer from "puppeteer"; // Importando o Puppeteer
+import puppeteer from "puppeteer";
 import fs from "fs";
 
 const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
@@ -23,27 +23,30 @@ const client = new Client({
   ],
 });
 
-// Função para tirar screenshot
-async function takeScreenshot(
-  previousMessageContent: string, // Conteúdo da mensagem citada
-  previousUserName: string, // Nome do usuário da mensagem citada
-  actualMessageContent: string, // Conteúdo da mensagem atual
-  actualUserName: string, // Nome do usuário da mensagem atual
-  previousImageUrl: string | null, // URL da imagem da mensagem citada (se houver)
-  previousProfileImageUrl: string, // URL do avatar da mensagem citada
-  actualImageUrl: string | null, // URL da imagem da mensagem atual (se houver)
-  actualProfileImageUrl: string // URL do avatar da mensagem atual
-) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
 
-  // Define o tamanho da viewport (ajustado para comportar a citação e a nova mensagem)
-  await page.setViewport({
-    width: 600, // Largura da tela
-    height: 400, // Altura ajustada para comportar ambas as mensagens
+
+async function takeScreenshot(
+  previousMessageContent: string, 
+  previousUserName: string, 
+  currentMessageContent: string,
+  currentUserName: string, 
+  previousImageUrl: string | null, 
+  previousProfileImageUrl: string, 
+  currentImageUrl: string | null, 
+  currentProfileImageUrl: string 
+) {
+
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
-  // Monta o HTML para incluir as duas mensagens
+  const page = await browser.newPage();
+
+  await page.setViewport({
+    width: 600, 
+    height: 400, 
+  });
+
   await page.setContent(`
     <html>
       <head>
@@ -124,23 +127,21 @@ async function takeScreenshot(
       </head>
       <body>
         <div class="tweet-container">
-          <!-- Mensagem atual -->
           <div class="tweet-header">
-            <div class="avatar" style="background-image: url('${actualProfileImageUrl}');"></div>
+            <div class="avatar" style="background-image: url('${currentProfileImageUrl}');"></div>
             <div class="user-info">
-              <span class="name">${actualUserName}</span>
+              <span class="name">${currentUserName}</span>
             </div>
           </div>
           <div class="tweet-content">
-            ${actualMessageContent}
+            ${currentMessageContent}
           </div>
           ${
-            actualImageUrl
-              ? `<img class="tweet-image" src="${actualImageUrl}" alt="Imagem da mensagem atual" />`
+            currentImageUrl
+              ? `<img class="tweet-image" src="${currentImageUrl}" alt="Imagem da mensagem atual" />`
               : ""
           }
 
-          <!-- Mensagem citada (quote) -->
           <div class="quote-container">
             <div class="quote-header">
               <div class="quote-avatar" style="background-image: url('${previousProfileImageUrl}');"></div>
@@ -169,7 +170,6 @@ async function takeScreenshot(
 
   const screenshotPath = `screenshot-${Date.now()}.png`;
 
-  // Tira o screenshot da página renderizada
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
   await browser.close();
@@ -261,13 +261,13 @@ client.on("messageCreate", async (message: Message) => {
 
                 // Pega a segunda mensagem (anterior) e a primeira (atual)
                 const previousMessage = messages.last();
-                const actualMessage = messages.first();
+                const currentMessage = messages.first();
 
                 // Verifica se a mensagem anterior é uma mensagem encaminhada (tem uma referência)
                 if (
                   previousMessage &&
                   previousMessage.reference?.messageId &&
-                  actualMessage
+                  currentMessage
                 ) {
                   const referencedMessageId =
                     previousMessage.reference.messageId;
@@ -302,17 +302,17 @@ client.on("messageCreate", async (message: Message) => {
                             extension: "png",
                           });
 
-                        // Coleta informações da mensagem atual (actualMessage)
-                        let actualImageUrl = null;
-                        if (actualMessage.attachments.size > 0) {
-                          const attachment = actualMessage.attachments.first();
+                        // Coleta informações da mensagem atual (currentMessage)
+                        let currentImageUrl = null;
+                        if (currentMessage.attachments.size > 0) {
+                          const attachment = currentMessage.attachments.first();
                           if (attachment?.contentType?.startsWith("image/")) {
-                            actualImageUrl = attachment.url; // URL da imagem da mensagem atual
+                            currentImageUrl = attachment.url; // URL da imagem da mensagem atual
                           }
                         }
 
-                        const actualProfileImageUrl =
-                          actualMessage.author.displayAvatarURL({
+                        const currentProfileImageUrl =
+                          currentMessage.author.displayAvatarURL({
                             extension: "png",
                           });
 
@@ -323,12 +323,12 @@ client.on("messageCreate", async (message: Message) => {
                         const screenshotPath = await takeScreenshot(
                           fetchedMessage.content, // conteúdo da mensagem anterior
                           fetchedMessage.author.username, // nome do autor da mensagem anterior
-                          actualMessage.content, // conteúdo da mensagem atual
-                          actualMessage.author.username, // nome do autor da mensagem atual
+                          currentMessage.content, // conteúdo da mensagem atual
+                          currentMessage.author.username, // nome do autor da mensagem atual
                           previousImageUrl, // URL da imagem da mensagem anterior
                           previousProfileImageUrl, // URL do avatar da mensagem anterior
-                          actualImageUrl, // URL da imagem da mensagem atual
-                          actualProfileImageUrl // URL do avatar da mensagem atual
+                          currentImageUrl, // URL da imagem da mensagem atual
+                          currentProfileImageUrl // URL do avatar da mensagem atual
                         );
 
                         // console.log("Screenshot tirada:", screenshotPath);
@@ -341,7 +341,9 @@ client.on("messageCreate", async (message: Message) => {
 
                         fs.unlink(screenshotPath, (err) => {
                           if (err) {
-                            console.error(`Erro ao deletar o arquivo de screenshot: ${err}`);
+                            console.error(
+                              `Erro ao deletar o arquivo de screenshot: ${err}`
+                            );
                           } else {
                             console.log("Screenshot deletado com sucesso!");
                           }

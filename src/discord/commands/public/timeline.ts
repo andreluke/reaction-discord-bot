@@ -6,6 +6,8 @@ import {
   TextChannel,
   NewsChannel,
 } from "discord.js";
+import puppeteer from "puppeteer"; // Importando o Puppeteer
+import fs from "fs";
 
 const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
@@ -21,6 +23,159 @@ const client = new Client({
   ],
 });
 
+// Função para tirar screenshot
+async function takeScreenshot(
+  previousMessageContent: string, // Conteúdo da mensagem citada
+  previousUserName: string, // Nome do usuário da mensagem citada
+  actualMessageContent: string, // Conteúdo da mensagem atual
+  actualUserName: string, // Nome do usuário da mensagem atual
+  previousImageUrl: string | null, // URL da imagem da mensagem citada (se houver)
+  previousProfileImageUrl: string, // URL do avatar da mensagem citada
+  actualImageUrl: string | null, // URL da imagem da mensagem atual (se houver)
+  actualProfileImageUrl: string // URL do avatar da mensagem atual
+) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  // Define o tamanho da viewport (ajustado para comportar a citação e a nova mensagem)
+  await page.setViewport({
+    width: 600, // Largura da tela
+    height: 400, // Altura ajustada para comportar ambas as mensagens
+  });
+
+  // Monta o HTML para incluir as duas mensagens
+  await page.setContent(`
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
+            background-color: #15202b;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+          }
+          .tweet-container {
+            width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #38444d;
+            border-radius: 10px;
+            background-color: #192734;
+          }
+          .tweet-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+          }
+          .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #657786;
+            background-size: cover;
+            background-position: center;
+          }
+          .tweet-content {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+          }
+          .tweet-footer {
+            display: flex;
+            justify-content: space-between;
+            color: #8899a6;
+          }
+          .tweet-image {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+            height: auto; /* Mantém a proporção da imagem */
+            border-radius: 10px;
+          }
+          .quote-container {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px solid #38444d;
+            border-radius: 10px;
+            background-color: #253341;
+            margin-bottom: 10px
+          }
+          .quote-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+          }
+          .quote-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #657786;
+            background-size: cover;
+            background-position: center;
+          }
+          .quote-content {
+            font-size: 16px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="tweet-container">
+          <!-- Mensagem atual -->
+          <div class="tweet-header">
+            <div class="avatar" style="background-image: url('${actualProfileImageUrl}');"></div>
+            <div class="user-info">
+              <span class="name">${actualUserName}</span>
+            </div>
+          </div>
+          <div class="tweet-content">
+            ${actualMessageContent}
+          </div>
+          ${
+            actualImageUrl
+              ? `<img class="tweet-image" src="${actualImageUrl}" alt="Imagem da mensagem atual" />`
+              : ""
+          }
+
+          <!-- Mensagem citada (quote) -->
+          <div class="quote-container">
+            <div class="quote-header">
+              <div class="quote-avatar" style="background-image: url('${previousProfileImageUrl}');"></div>
+              <div class="user-info">
+                <span class="name">${previousUserName}</span>
+              </div>
+            </div>
+            <div class="quote-content">
+              ${previousMessageContent}
+            </div>
+            ${
+              previousImageUrl
+                ? `<img class="tweet-image" src="${previousImageUrl}" alt="Imagem da mensagem citada" />`
+                : ""
+            }
+          </div>
+
+          <div class="tweet-footer">
+            <span>${new Date().toLocaleTimeString()} · ${new Date().toLocaleDateString()}</span>
+            <span>Twitter Web App</span>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+
+  const screenshotPath = `screenshot-${Date.now()}.png`;
+
+  // Tira o screenshot da página renderizada
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+
+  await browser.close();
+  return screenshotPath;
+}
+
 client.once("ready", () => {
   console.log(`Bot online! Logado como ${client.user?.tag}`);
 });
@@ -34,7 +189,7 @@ client.on("messageCreate", async (message: Message) => {
 
       if (channel.isTextBased() && "parent" in channel) {
         const guild = message.guild;
-        const freshChannel = await guild?.channels.fetch(channel.id);
+        const freshChannel = await guild.channels.fetch(channel.id);
         const category = freshChannel?.parent;
 
         if (!category) {
@@ -69,10 +224,10 @@ client.on("messageCreate", async (message: Message) => {
               if (message.attachments.size > 0) {
                 message.attachments.forEach((attachment) => {
                   const fileType =
-                    attachment.contentType || attachment.name?.split(".").pop(); // Verifica o tipo de arquivo
+                    attachment.contentType || attachment.name?.split(".").pop();
 
                   if (fileType?.startsWith("image")) {
-                    embed.setImage(attachment.url); // Exibe imagens diretamente no embed
+                    embed.setImage(attachment.url);
                   } else if (
                     fileType?.startsWith("video") ||
                     fileType === "gif"
@@ -87,12 +242,11 @@ client.on("messageCreate", async (message: Message) => {
                       value: `[Anexo abaixo](${attachment.url})`,
                       inline: false,
                     });
-                    mediaUrl = attachment.url; // Salva o link do vídeo ou GIF
+                    mediaUrl = attachment.url;
                   }
                 });
               }
 
-              // Procura links de GIFs no conteúdo da mensagem (ex.: Tenor ou Giphy)
               const gifPattern =
                 /(https?:\/\/(?:tenor|giphy)\.com\/view\/[^\s]+)/g;
               const foundGifLinks = content.match(gifPattern);
@@ -100,9 +254,118 @@ client.on("messageCreate", async (message: Message) => {
               if (foundGifLinks) {
                 gifLinks.push(...foundGifLinks);
               }
+              try {
+                const messages = await message.channel.messages.fetch({
+                  limit: 2,
+                });
 
-              // Envia o embed primeiro
-              await targetChannel.send({ embeds: [embed] });
+                // Pega a segunda mensagem (anterior) e a primeira (atual)
+                const previousMessage = messages.last();
+                const actualMessage = messages.first();
+
+                // Verifica se a mensagem anterior é uma mensagem encaminhada (tem uma referência)
+                if (
+                  previousMessage &&
+                  previousMessage.reference?.messageId &&
+                  actualMessage
+                ) {
+                  const referencedMessageId =
+                    previousMessage.reference.messageId;
+                  const referencedChannelId =
+                    previousMessage.reference.channelId || message.channel.id; // Canal da mensagem referenciada ou o atual
+
+                  // Tenta buscar o canal da mensagem referenciada
+                  const referencedChannel = await message.guild?.channels.fetch(
+                    referencedChannelId
+                  );
+
+                  if (referencedChannel?.isTextBased()) {
+                    try {
+                      // Tenta buscar a mensagem referenciada no canal correto
+                      const fetchedMessage =
+                        await referencedChannel.messages.fetch(
+                          referencedMessageId
+                        );
+
+                      if (fetchedMessage) {
+                        // Coleta informações da mensagem anterior (fetchedMessage)
+                        let previousImageUrl = null;
+                        if (fetchedMessage.attachments.size > 0) {
+                          const attachment = fetchedMessage.attachments.first();
+                          if (attachment?.contentType?.startsWith("image/")) {
+                            previousImageUrl = attachment.url; // URL da imagem da mensagem anterior
+                          }
+                        }
+
+                        const previousProfileImageUrl =
+                          fetchedMessage.author.displayAvatarURL({
+                            extension: "png",
+                          });
+
+                        // Coleta informações da mensagem atual (actualMessage)
+                        let actualImageUrl = null;
+                        if (actualMessage.attachments.size > 0) {
+                          const attachment = actualMessage.attachments.first();
+                          if (attachment?.contentType?.startsWith("image/")) {
+                            actualImageUrl = attachment.url; // URL da imagem da mensagem atual
+                          }
+                        }
+
+                        const actualProfileImageUrl =
+                          actualMessage.author.displayAvatarURL({
+                            extension: "png",
+                          });
+
+                        // Chama a função takeScreenshot passando os dados de ambas as mensagens
+                        console.log(
+                          "Tirando screenshot com ambas as mensagens..."
+                        );
+                        const screenshotPath = await takeScreenshot(
+                          fetchedMessage.content, // conteúdo da mensagem anterior
+                          fetchedMessage.author.username, // nome do autor da mensagem anterior
+                          actualMessage.content, // conteúdo da mensagem atual
+                          actualMessage.author.username, // nome do autor da mensagem atual
+                          previousImageUrl, // URL da imagem da mensagem anterior
+                          previousProfileImageUrl, // URL do avatar da mensagem anterior
+                          actualImageUrl, // URL da imagem da mensagem atual
+                          actualProfileImageUrl // URL do avatar da mensagem atual
+                        );
+
+                        // console.log("Screenshot tirada:", screenshotPath);
+
+                        // Envia o embed e o screenshot gerado
+                        await targetChannel.send({ embeds: [embed] });
+                        await targetChannel.send({
+                          files: [screenshotPath],
+                        });
+
+                        fs.unlink(screenshotPath, (err) => {
+                          if (err) {
+                            console.error(`Erro ao deletar o arquivo de screenshot: ${err}`);
+                          } else {
+                            console.log("Screenshot deletado com sucesso!");
+                          }
+                        });
+                      }
+                    } catch (err) {
+                      console.error(
+                        `Erro ao buscar a mensagem referenciada: ${err}`
+                      );
+                      // Se a mensagem referenciada não for encontrada, apenas envia o embed sem o screenshot
+                      await targetChannel.send({ embeds: [embed] });
+                    }
+                  }
+                } else {
+                  // Se a mensagem anterior não for uma mensagem encaminhada, apenas envia o embed sem o screenshot
+                  await targetChannel.send({ embeds: [embed] });
+                }
+              } catch (error) {
+                console.error(
+                  "Erro ao buscar a mensagem anterior ou a mensagem encaminhada:",
+                  error
+                );
+                await targetChannel.send({ embeds: [embed] });
+              }
 
               // Se houver mídia (vídeo ou GIF) anexada, envia o link fora do embed
               if (mediaUrl) {
@@ -119,7 +382,7 @@ client.on("messageCreate", async (message: Message) => {
               console.log("O canal de destino não é um canal de texto.");
             }
           }, 1000);
-        } 
+        }
       }
     }
   }

@@ -45,7 +45,7 @@
   },
   "typescript.suggest.autoImports": true,
   "window.title": "${rootName}${separator}vscode",
-  "files.autoSave": "afterDelay",
+  "files.autoSave": "off",
   "files.readonlyInclude": {
     "node_modules/**": true,
     "build/**": true,

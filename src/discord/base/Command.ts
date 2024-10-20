@@ -42,7 +42,7 @@ export class Command<
 	private static Commands = new Collection<string, CommandData<any, any, any>>();
 	constructor(data: CommandData<N, T, D>){
 		data.dmPermission??=false as D;
-		data.type??=ApplicationCommandType.ChatInput as T;
+		// data.type??=ApplicationCommandType.ChatInput as T;
 		Command.Commands.set(data.name, data);
 		Command.Handlers.set(data.name, { 
 			run: data.run, autocomplete: "autocomplete" in data ? data.autocomplete : undefined 

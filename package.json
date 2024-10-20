@@ -17,8 +17,11 @@
     "chalk": "^5.3.0",
     "consola": "^3.2.3",
     "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
     "fast-glob": "^3.3.2",
+    "puppeteer": "^23.5.3",
     "radix3": "^1.1.2",
+    "reactiontweet": "file:",
     "zod": "^3.23.8"
   },
   "devDependencies": {

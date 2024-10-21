@@ -23,28 +23,25 @@ const client = new Client({
   ],
 });
 
-
-
 async function takeScreenshot(
-  previousMessageContent: string, 
-  previousUserName: string, 
+  previousMessageContent: string,
+  previousUserName: string,
   currentMessageContent: string,
-  currentUserName: string, 
-  previousImageUrl: string | null, 
-  previousProfileImageUrl: string, 
-  currentImageUrl: string | null, 
-  currentProfileImageUrl: string 
+  currentUserName: string,
+  previousImageUrl: string | null,
+  previousProfileImageUrl: string,
+  currentImageUrl: string | null,
+  currentProfileImageUrl: string
 ) {
-
   const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   const page = await browser.newPage();
 
   await page.setViewport({
-    width: 600, 
-    height: 400, 
+    width: 600,
+    height: 400,
   });
 
   await page.setContent(`
@@ -205,7 +202,23 @@ client.on("messageCreate", async (message: Message) => {
             ) {
               const userAvatarURL = message.author.displayAvatarURL();
               const userName = message.author.username;
-              const content = message.content;
+              let content = message.content;
+
+              const replyRegex = /^>\s*\[Reply to\].*\n>\s*(.*)\n(.*)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
+              const match = content.match(replyRegex);
+              let secondArrow: string | null = null;
+              console.log(`"${content}"`);
+
+              if (match) {
+                secondArrow = match[1].trim(); // O conteúdo imediatamente após o segundo '>'
+                content = match[2].trim(); // O "real conteúdo" da terceira linha em diante
+
+                console.log("match");
+                console.log(`After second '>': "${secondArrow}"`); // Conteúdo logo após o segundo '>'
+                console.log(`Real content: "${content}"`); // Conteúdo da terceira linha em diante
+              } else {
+                console.log("no match");
+              }
 
               const messageLink = `https://discord.com/channels/${message.guild?.id}/${message.channel.id}/${message.id}`;
 
@@ -221,6 +234,7 @@ client.on("messageCreate", async (message: Message) => {
               let mediaUrl: string | undefined;
               const gifLinks: string[] = [];
 
+              const attachments: (string | null)[] = [];
               if (message.attachments.size > 0) {
                 message.attachments.forEach((attachment) => {
                   const fileType =
@@ -228,6 +242,7 @@ client.on("messageCreate", async (message: Message) => {
 
                   if (fileType?.startsWith("image")) {
                     embed.setImage(attachment.url);
+                    attachments.push(attachment.url);
                   } else if (
                     fileType?.startsWith("video") ||
                     fileType === "gif"
@@ -367,6 +382,42 @@ client.on("messageCreate", async (message: Message) => {
                   error
                 );
                 await targetChannel.send({ embeds: [embed] });
+              }
+              // Verifica se a mensagem anterior é uma mensagem encaminhada (tem uma referência)
+              if (secondArrow) {
+                try {
+                  // Chama a função takeScreenshot passando os dados de ambas as mensagens
+                  console.log("Tirando screenshot com ambas as mensagens...");
+                  const screenshotPath = await takeScreenshot(
+                    secondArrow, // conteúdo da mensagem anterior
+                    userName, // nome do autor da mensagem anterior
+                    content, // conteúdo da mensagem atual
+                    userName, // nome do autor da mensagem atual
+                    null, // URL da imagem da mensagem anterior
+                    userAvatarURL, // URL do avatar da mensagem anterior
+                    attachments[0], // URL da imagem da mensagem atual (apenas a primeira, se houver)
+                    userAvatarURL // URL do avatar da mensagem atual
+                  );
+
+                  // Envia o embed e o screenshot gerado
+                  // await targetChannel.send({ embeds: [embed] });
+                  await targetChannel.send({ files: [screenshotPath] });
+
+                  // Deleta o arquivo de screenshot após enviá-lo
+                  fs.unlink(screenshotPath, (err) => {
+                    if (err) {
+                      console.error(
+                        `Erro ao deletar o arquivo de screenshot: ${err}`
+                      );
+                    } else {
+                      console.log("Screenshot deletado com sucesso!");
+                    }
+                  });
+                } catch (err) {
+                  console.error(
+                    `Erro ao buscar a mensagem referenciada: ${err}`
+                  );
+                }
               }
 
               // Se houver mídia (vídeo ou GIF) anexada, envia o link fora do embed

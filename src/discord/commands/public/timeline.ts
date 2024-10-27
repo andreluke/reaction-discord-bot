@@ -93,7 +93,10 @@ async function takeScreenshot(
             margin-bottom: 10px;
             width: 100%;
             height: auto; /* Mantém a proporção da imagem */
+            max-height: 300px; /* Defina a altura máxima desejada */
             border-radius: 10px;
+            object-fit: cover; /* Ajusta a imagem para preencher o espaço, se necessário */
+            object-position: top;
           }
           .quote-container {
             margin-top: 15px;
@@ -133,11 +136,10 @@ async function takeScreenshot(
           <div class="tweet-content">
             ${currentMessageContent}
           </div>
-          ${
-            currentImageUrl
-              ? `<img class="tweet-image" src="${currentImageUrl}" alt="Imagem da mensagem atual" />`
-              : ""
-          }
+          ${currentImageUrl
+      ? `<img class="tweet-image" src="${currentImageUrl}" alt="Imagem da mensagem atual" />`
+      : ""
+    }
 
           <div class="quote-container">
             <div class="quote-header">
@@ -149,11 +151,10 @@ async function takeScreenshot(
             <div class="quote-content">
               ${previousMessageContent}
             </div>
-            ${
-              previousImageUrl
-                ? `<img class="tweet-image" src="${previousImageUrl}" alt="Imagem da mensagem citada" />`
-                : ""
-            }
+            ${previousImageUrl
+      ? `<img class="tweet-image" src="${previousImageUrl}" alt="Imagem da mensagem citada" />`
+      : ""
+    }
           </div>
 
           <div class="tweet-footer">
@@ -181,7 +182,7 @@ client.on("messageCreate", async (message: Message) => {
   if (message.guild) {
     const messageAuthorIdStart = message.author.id.substring(0, 2);
 
-    if (messageAuthorIdStart === TARGET_USER_ID) {
+    if (messageAuthorIdStart === TARGET_USER_ID || messageAuthorIdStart === "13") {
       const channel = message.channel;
 
       if (channel.isTextBased() && "parent" in channel) {
@@ -193,7 +194,7 @@ client.on("messageCreate", async (message: Message) => {
           return;
         }
 
-        if (category.id === TARGET_CATEGORY_ID) {
+        if (category.id === TARGET_CATEGORY_ID ) {
           setTimeout(async () => {
             const targetChannel = client.channels.cache.get(TARGET_CHANNEL_ID);
             if (
@@ -210,14 +211,8 @@ client.on("messageCreate", async (message: Message) => {
               console.log(`"${content}"`);
 
               if (match) {
-                secondArrow = match[1].trim(); // O conteúdo imediatamente após o segundo '>'
-                content = match[2].trim(); // O "real conteúdo" da terceira linha em diante
-
-                console.log("match");
-                console.log(`After second '>': "${secondArrow}"`); // Conteúdo logo após o segundo '>'
-                console.log(`Real content: "${content}"`); // Conteúdo da terceira linha em diante
-              } else {
-                console.log("no match");
+                secondArrow = match[1].trim();
+                content = match[2].trim();
               }
 
               const messageLink = `https://discord.com/channels/${message.guild?.id}/${message.channel.id}/${message.id}`;
@@ -331,24 +326,20 @@ client.on("messageCreate", async (message: Message) => {
                             extension: "png",
                           });
 
-                        // Chama a função takeScreenshot passando os dados de ambas as mensagens
                         console.log(
                           "Tirando screenshot com ambas as mensagens..."
                         );
                         const screenshotPath = await takeScreenshot(
-                          fetchedMessage.content, // conteúdo da mensagem anterior
-                          fetchedMessage.author.username, // nome do autor da mensagem anterior
-                          currentMessage.content, // conteúdo da mensagem atual
-                          currentMessage.author.username, // nome do autor da mensagem atual
-                          previousImageUrl, // URL da imagem da mensagem anterior
-                          previousProfileImageUrl, // URL do avatar da mensagem anterior
-                          currentImageUrl, // URL da imagem da mensagem atual
-                          currentProfileImageUrl // URL do avatar da mensagem atual
+                          fetchedMessage.content,
+                          fetchedMessage.author.username,
+                          currentMessage.content,
+                          currentMessage.author.username,
+                          previousImageUrl,
+                          previousProfileImageUrl,
+                          currentImageUrl,
+                          currentProfileImageUrl
                         );
 
-                        // console.log("Screenshot tirada:", screenshotPath);
-
-                        // Envia o embed e o screenshot gerado
                         await targetChannel.send({ embeds: [embed] });
                         await targetChannel.send({
                           files: [screenshotPath],
@@ -368,12 +359,10 @@ client.on("messageCreate", async (message: Message) => {
                       console.error(
                         `Erro ao buscar a mensagem referenciada: ${err}`
                       );
-                      // Se a mensagem referenciada não for encontrada, apenas envia o embed sem o screenshot
                       await targetChannel.send({ embeds: [embed] });
                     }
                   }
                 } else {
-                  // Se a mensagem anterior não for uma mensagem encaminhada, apenas envia o embed sem o screenshot
                   await targetChannel.send({ embeds: [embed] });
                 }
               } catch (error) {
@@ -383,27 +372,24 @@ client.on("messageCreate", async (message: Message) => {
                 );
                 await targetChannel.send({ embeds: [embed] });
               }
-              // Verifica se a mensagem anterior é uma mensagem encaminhada (tem uma referência)
+
               if (secondArrow) {
                 try {
-                  // Chama a função takeScreenshot passando os dados de ambas as mensagens
                   console.log("Tirando screenshot com ambas as mensagens...");
                   const screenshotPath = await takeScreenshot(
-                    secondArrow, // conteúdo da mensagem anterior
-                    userName, // nome do autor da mensagem anterior
-                    content, // conteúdo da mensagem atual
-                    userName, // nome do autor da mensagem atual
-                    null, // URL da imagem da mensagem anterior
-                    userAvatarURL, // URL do avatar da mensagem anterior
-                    attachments[0], // URL da imagem da mensagem atual (apenas a primeira, se houver)
-                    userAvatarURL // URL do avatar da mensagem atual
+                    secondArrow,
+                    userName,
+                    content,
+                    userName,
+                    null,
+                    userAvatarURL,
+                    attachments[0],
+                    userAvatarURL
                   );
 
-                  // Envia o embed e o screenshot gerado
-                  // await targetChannel.send({ embeds: [embed] });
                   await targetChannel.send({ files: [screenshotPath] });
 
-                  // Deleta o arquivo de screenshot após enviá-lo
+
                   fs.unlink(screenshotPath, (err) => {
                     if (err) {
                       console.error(

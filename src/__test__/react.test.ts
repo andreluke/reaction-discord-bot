@@ -88,6 +88,37 @@ describe("Função de reação", () => {
     expect(message.react).toHaveBeenNthCalledWith(4, "💬");
   });
 
+  it("Deve reagir a uma mensagem na categoria correta e com o user correto, mesmo iniciando com 13", async () => {
+    const message = {
+      guild: {
+        channels: {
+          fetch: jest.fn().mockResolvedValue({
+            parent: {
+              id: TARGET_CATEGORY_ID, // Simulando a categoria correta
+            },
+          }),
+        },
+      },
+      author: { id: "134456789" }, // Começa com '12'
+      channel: {
+        parent: TARGET_CATEGORY_ID,
+        isTextBased: jest.fn().mockReturnValue(true), // Canal é baseado em texto
+        id: "channel-id",
+      },
+      react: jest.fn().mockResolvedValue(Promise.resolve()), // Mock do método react
+    };
+
+    // Emitir a mensagem
+    await client.emit("messageCreate", message as any);
+
+    // Verificar se as reações foram chamadas
+    expect(message.react).toHaveBeenCalledTimes(4); // Deve chamar react 4 vezes
+    expect(message.react).toHaveBeenNthCalledWith(1, "❤️");
+    expect(message.react).toHaveBeenNthCalledWith(2, "💔");
+    expect(message.react).toHaveBeenNthCalledWith(3, "🔁");
+    expect(message.react).toHaveBeenNthCalledWith(4, "💬");
+  });
+
   it("Não deve reagir se a categoria não for a certa", async () => {
     const message = {
       guild: {

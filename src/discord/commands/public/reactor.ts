@@ -35,6 +35,7 @@ client.on("messageCreate", async (message: Message) => {
 
         if (category.id === TARGET_CATEGORY_ID) {
           message.react("❤️")
+          .then(() => message.react("💔"))
             .then(() => message.react("🔁"))
             .then(() => message.react("💬"))
             .catch(console.error);

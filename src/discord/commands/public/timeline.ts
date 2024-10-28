@@ -13,6 +13,7 @@ const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID;
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const privateAcc: string[] = ["🔐 [PRIV ACC]", "[🔒]", "[ priv ]", "🔒 "];  
 
 export const client = new Client({
   intents: [
@@ -181,7 +182,10 @@ client.on("messageCreate", async (message: Message) => {
   if (message.guild) {
     const messageAuthorIdStart = message.author.id.substring(0, 2);
 
-    if (messageAuthorIdStart === TARGET_USER_ID || messageAuthorIdStart === "13") {
+    if (
+      messageAuthorIdStart === TARGET_USER_ID ||
+      messageAuthorIdStart === "13"
+    ) {
       const channel = message.channel;
 
       if (channel.isTextBased() && "parent" in channel) {
@@ -212,7 +216,6 @@ client.on("messageCreate", async (message: Message) => {
                 secondArrow = match[1].trim(); // O conteúdo imediatamente após o segundo '>'
                 content = match[2].trim(); // O "real conteúdo" da terceira linha em diante
               } else {
-
               }
 
               const messageLink = `https://discord.com/channels/${message.guild?.id}/${message.channel.id}/${message.id}`;
@@ -275,7 +278,7 @@ client.on("messageCreate", async (message: Message) => {
 
                 const previousDate = previousMessage?.createdAt;
                 const currentDate = currentMessage?.createdAt;
-              
+
                 const isSameDay =
                   previousDate?.getFullYear() === currentDate?.getFullYear() &&
                   previousDate?.getMonth() === currentDate?.getMonth() &&
@@ -285,7 +288,8 @@ client.on("messageCreate", async (message: Message) => {
                 if (
                   previousMessage &&
                   previousMessage.reference?.messageId &&
-                  currentMessage && isSameDay
+                  currentMessage &&
+                  isSameDay
                 ) {
                   const referencedMessageId =
                     previousMessage.reference.messageId;
@@ -334,15 +338,14 @@ client.on("messageCreate", async (message: Message) => {
                             extension: "png",
                           });
 
-                          const replyRegex = /^>\s*\[Reply to\].*\n>\s*(.*)\n(.*)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
-              const match =  fetchedMessage.content.match(replyRegex);
-              let newMessage: string = fetchedMessage.content;
+                        const replyRegex =
+                          /^>\s*\[Reply to\].*\n>\s*(.*)\n(.*)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
+                        const match = fetchedMessage.content.match(replyRegex);
+                        let newMessage: string = fetchedMessage.content;
 
-              if (match) {
-                newMessage = match[2].trim(); // O "real conteúdo" da terceira linha em diante
-
-              } 
-
+                        if (match) {
+                          newMessage = match[2].trim(); // O "real conteúdo" da terceira linha em diante
+                        }
 
                         // Chama a função takeScreenshot passando os dados de ambas as mensagens
                         console.log(
@@ -375,6 +378,9 @@ client.on("messageCreate", async (message: Message) => {
                           } else {
                             console.log("Screenshot deletado com sucesso!");
                           }
+                          if (privateAcc.some((acc) => newMessage.startsWith(acc))) {
+                           fetchedMessage.react("🔒");
+                          }
                         });
                       }
                     } catch (err) {
@@ -399,6 +405,10 @@ client.on("messageCreate", async (message: Message) => {
               // Verifica se a mensagem anterior é uma mensagem encaminhada (tem uma referência)
               if (secondArrow) {
                 try {
+
+                  if (privateAcc.some((acc) => secondArrow.startsWith(acc))) {
+                     message.react("🔒");
+                  }
                   // Chama a função takeScreenshot passando os dados de ambas as mensagens
                   console.log("Tirando screenshot com ambas as mensagens...");
                   const screenshotPath = await takeScreenshot(
@@ -415,6 +425,8 @@ client.on("messageCreate", async (message: Message) => {
                   // Envia o embed e o screenshot gerado
                   // await targetChannel.send({ embeds: [embed] });
                   await targetChannel.send({ files: [screenshotPath] });
+
+                  
 
                   // Deleta o arquivo de screenshot após enviá-lo
                   fs.unlink(screenshotPath, (err) => {

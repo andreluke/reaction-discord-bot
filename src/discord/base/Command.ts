@@ -29,8 +29,8 @@ type CommandData<N extends string, T, D> = CommandProps<N, D, T> & {
 }
 
 interface CommandHandler {
-	run(interaction: CommandInteraction): void
-	autocomplete?(interaction: AutocompleteInteraction): void;
+    run(interaction: CommandInteraction | ChatInputCommandInteraction | UserContextMenuCommandInteraction | MessageContextMenuCommandInteraction): void;
+    autocomplete?(interaction: AutocompleteInteraction): void;
 }
 
 export class Command<

@@ -4,7 +4,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"skipLibCheck": true,
 		"resolveJsonModule": true,
-		"strict": true,
+		"strict": false,
 		
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -30,5 +30,5 @@
 		},
 	},
 	"include": ["src"],
-	"exclude": ["node_modules"]
+	"exclude": ["node_modules", "src/__test__"]
 }

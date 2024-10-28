@@ -23,7 +23,7 @@ const client = new Client({
   ],
 });
 
-async function takeScreenshot(
+export async function takeScreenshot(
   previousMessageContent: string,
   previousUserName: string,
   currentMessageContent: string,

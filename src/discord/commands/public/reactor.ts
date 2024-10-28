@@ -8,8 +8,8 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions 
-  ]
+    GatewayIntentBits.GuildMessageReactions,
+  ],
 });
 
 client.once("ready", () => {
@@ -19,8 +19,11 @@ client.once("ready", () => {
 client.on("messageCreate", async (message: Message) => {
   if (message.guild) {
     const messageAuthorIdStart = message.author.id.substring(0, 2);
-    
-    if (messageAuthorIdStart === TARGET_USER_ID || messageAuthorIdStart === "13") {
+
+    if (
+      messageAuthorIdStart === TARGET_USER_ID ||
+      messageAuthorIdStart === "13"
+    ) {
       const channel = message.channel;
 
       if (channel.isTextBased() && "parent" in channel) {
@@ -34,11 +37,16 @@ client.on("messageCreate", async (message: Message) => {
         }
 
         if (category.id === TARGET_CATEGORY_ID) {
-          message.react("❤️")
-          .then(() => message.react("💔"))
-            .then(() => message.react("🔁"))
-            .then(() => message.react("💬"))
-            .catch(console.error);
+          try {
+            await Promise.all([
+              message.react("❤️"),
+              message.react("💔"),
+              message.react("🔁"),
+              message.react("💬"),
+            ]);
+          } catch (error) {
+            console.error("Erro ao adicionar reações:", error);
+          }
         }
       }
     }

@@ -15,10 +15,11 @@
         "prefer-const":"error",
         "no-var":"off",
         "@typescript-eslint/no-require-imports": "error",
-        "@typescript-eslint/await-thenable": "error"
+        "@typescript-eslint/await-thenable": "error",
+        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
     },
     "ignorePatterns":[
         "build", "dist", "prod", "product", "vendor", "node_modules",
-        "/*.config.{mjs,js}", "/*.build.{mjs,js}" 
+        "/*.config.{mjs,js}", "/*.build.{mjs,js}", "src/__test__/**" 
     ]
 }

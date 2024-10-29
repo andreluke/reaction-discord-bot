@@ -10,9 +10,12 @@ import puppeteer from "puppeteer";
 import fs from "fs";
 
 const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
+const TARGET_USER_ID2 = process.env.TARGET_USER_ID2?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID;
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const privateAcc: string[] = ["🔐 [PRIV ACC]", "[🔒]", "[ priv ]", "🔒 "];
+
 
 export const client = new Client({
   intents: [
@@ -31,7 +34,8 @@ async function takeScreenshot(
   previousImageUrl: string | null,
   previousProfileImageUrl: string,
   currentImageUrl: string | null,
-  currentProfileImageUrl: string
+  currentProfileImageUrl: string,
+  isPrivateQuote?: boolean
 ) {
   const browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -120,6 +124,16 @@ async function takeScreenshot(
           .quote-content {
             font-size: 16px;
           }
+          .user-info{
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          }
+          .private{
+          font-size: 25;
+          color: yellow;
+          margin-left: 8
+          }
         </style>
       </head>
       <body>
@@ -128,6 +142,12 @@ async function takeScreenshot(
             <div class="avatar" style="background-image: url('${currentProfileImageUrl}');"></div>
             <div class="user-info">
               <span class="name">${currentUserName}</span>
+              ${
+            isPrivateQuote
+              // eslint-disable-next-line quotes
+              ? `<span class="private">☆</span>`
+              : ""
+          }
             </div>
           </div>
           <div class="tweet-content">
@@ -181,7 +201,10 @@ client.on("messageCreate", async (message: Message) => {
   if (message.guild) {
     const messageAuthorIdStart = message.author.id.substring(0, 2);
 
-    if (messageAuthorIdStart === TARGET_USER_ID || messageAuthorIdStart === "13") {
+    if (
+      messageAuthorIdStart === TARGET_USER_ID ||
+      messageAuthorIdStart === TARGET_USER_ID2
+    ) {
       const channel = message.channel;
 
       if (channel.isTextBased() && "parent" in channel) {
@@ -204,7 +227,7 @@ client.on("messageCreate", async (message: Message) => {
               const userName = message.author.username;
               let content = message.content;
 
-              const replyRegex = /^>\s*\[Reply to\].*\n>\s*(.*)\n(.*)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
+              const replyRegex = /^>\s*\[Reply to\].*\n>\s*(.*)\n([^\n]+)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
               const match = content.match(replyRegex);
               let secondArrow: string | null = null;
 
@@ -212,7 +235,6 @@ client.on("messageCreate", async (message: Message) => {
                 secondArrow = match[1].trim(); // O conteúdo imediatamente após o segundo '>'
                 content = match[2].trim(); // O "real conteúdo" da terceira linha em diante
               } else {
-
               }
 
               const messageLink = `https://discord.com/channels/${message.guild?.id}/${message.channel.id}/${message.id}`;
@@ -275,7 +297,7 @@ client.on("messageCreate", async (message: Message) => {
 
                 const previousDate = previousMessage?.createdAt;
                 const currentDate = currentMessage?.createdAt;
-              
+
                 const isSameDay =
                   previousDate?.getFullYear() === currentDate?.getFullYear() &&
                   previousDate?.getMonth() === currentDate?.getMonth() &&
@@ -285,7 +307,8 @@ client.on("messageCreate", async (message: Message) => {
                 if (
                   previousMessage &&
                   previousMessage.reference?.messageId &&
-                  currentMessage && isSameDay
+                  currentMessage &&
+                  isSameDay
                 ) {
                   const referencedMessageId =
                     previousMessage.reference.messageId;
@@ -306,6 +329,16 @@ client.on("messageCreate", async (message: Message) => {
                         );
 
                       if (fetchedMessage) {
+                        let isPrivateQuote:boolean = false;
+                        if (
+                          privateAcc.some((acc) =>
+                            currentMessage.content.startsWith(acc)
+                          )
+                        ) {
+                          isPrivateQuote = true;
+                          fetchedMessage.react("🔒");
+                        }
+
                         // Coleta informações da mensagem anterior (fetchedMessage)
                         let previousImageUrl = null;
                         if (fetchedMessage.attachments.size > 0) {
@@ -334,15 +367,14 @@ client.on("messageCreate", async (message: Message) => {
                             extension: "png",
                           });
 
-                          const replyRegex = /^>\s*\[Reply to\].*\n>\s*(.*)\n(.*)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
-              const match =  fetchedMessage.content.match(replyRegex);
-              let newMessage: string = fetchedMessage.content;
+                        const replyRegex =
+                          /^>\s*\[Reply to\].*\n>\s*(.*)\n(.*)/s; // Captura o que vier na linha após o segundo '>' e a terceira linha em diante
+                        const match = fetchedMessage.content.match(replyRegex);
+                        let newMessage: string = fetchedMessage.content;
 
-              if (match) {
-                newMessage = match[2].trim(); // O "real conteúdo" da terceira linha em diante
-
-              } 
-
+                        if (match) {
+                          newMessage = match[2].trim(); // O "real conteúdo" da terceira linha em diante
+                        }
 
                         // Chama a função takeScreenshot passando os dados de ambas as mensagens
                         console.log(
@@ -356,7 +388,8 @@ client.on("messageCreate", async (message: Message) => {
                           previousImageUrl, // URL da imagem da mensagem anterior
                           previousProfileImageUrl, // URL do avatar da mensagem anterior
                           currentImageUrl, // URL da imagem da mensagem atual
-                          currentProfileImageUrl // URL do avatar da mensagem atual
+                          currentProfileImageUrl, // URL do avatar da mensagem atual
+                          isPrivateQuote
                         );
 
                         // console.log("Screenshot tirada:", screenshotPath);

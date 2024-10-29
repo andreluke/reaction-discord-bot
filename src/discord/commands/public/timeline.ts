@@ -12,6 +12,7 @@ import fs from "fs";
 const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
 const TARGET_USER_ID2 = process.env.TARGET_USER_ID2?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
+const TARGET_CATEGORY_ID2 = process.env.TARGET_CATEGORY_ID2;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const privateAcc: string[] = ["🔐 [PRIV ACC]", "[🔒]", "[ priv ]", "🔒 "];
@@ -216,7 +217,7 @@ client.on("messageCreate", async (message: Message) => {
           return;
         }
 
-        if (category.id === TARGET_CATEGORY_ID) {
+        if (category.id === TARGET_CATEGORY_ID || category.id === TARGET_CATEGORY_ID2) {
           setTimeout(async () => {
             const targetChannel = client.channels.cache.get(TARGET_CHANNEL_ID);
             if (

@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits, Message } from "discord.js";
 const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
 const TARGET_USER_ID2 = process.env.TARGET_USER_ID2?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
+const TARGET_CATEGORY_ID2 = process.env.TARGET_CATEGORY_ID2;
 
 
 const client = new Client({
@@ -38,7 +39,7 @@ client.on("messageCreate", async (message: Message) => {
           return;
         }
 
-        if (category.id === TARGET_CATEGORY_ID) {
+        if (category.id === TARGET_CATEGORY_ID || category.id === TARGET_CATEGORY_ID2) {
           try {
             await Promise.all([
               message.react("❤️"),

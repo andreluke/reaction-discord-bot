@@ -3,7 +3,9 @@
 import { Client, GatewayIntentBits } from "discord.js"; 
 
 const TARGET_USER_ID = "12"; // Use um valor de exemplo
+const TARGET_USER_ID2 = "13"
 const TARGET_CATEGORY_ID = "category-id"; // Use um valor de exemplo
+const TARGET_CATEGORY_ID2 = "category2-id"
 
 // @ts-ignore
 const client = new Client({
@@ -23,7 +25,7 @@ client.on("messageCreate", async (message) => {
   if (message.guild) {
     const messageAuthorIdStart = message.author.id.substring(0, 2);
 
-    if (messageAuthorIdStart === TARGET_USER_ID || messageAuthorIdStart === "13") {
+    if (messageAuthorIdStart === TARGET_USER_ID || messageAuthorIdStart === TARGET_USER_ID2) {
       const channel = message.channel;
 
       if (channel.isTextBased() && "parent" in channel) {
@@ -37,7 +39,7 @@ client.on("messageCreate", async (message) => {
           return;
         }
 
-        if (category.id === TARGET_CATEGORY_ID) {
+        if (category.id === TARGET_CATEGORY_ID || category.id === TARGET_CATEGORY_ID2) {
           try {
             await Promise.all([
               message.react("❤️"),
@@ -64,6 +66,37 @@ describe("Função de reação", () => {
           fetch: jest.fn().mockResolvedValue({
             parent: {
               id: TARGET_CATEGORY_ID, // Simulando a categoria correta
+            },
+          }),
+        },
+      },
+      author: { id: "123456789" }, // Começa com '12'
+      channel: {
+        parent: TARGET_CATEGORY_ID,
+        isTextBased: jest.fn().mockReturnValue(true), // Canal é baseado em texto
+        id: "channel-id",
+      },
+      react: jest.fn().mockResolvedValue(Promise.resolve()), // Mock do método react
+    };
+
+    // Emitir a mensagem
+    await client.emit("messageCreate", message as any);
+
+    // Verificar se as reações foram chamadas
+    expect(message.react).toHaveBeenCalledTimes(4); // Deve chamar react 4 vezes
+    expect(message.react).toHaveBeenNthCalledWith(1, "❤️");
+    expect(message.react).toHaveBeenNthCalledWith(2, "💔");
+    expect(message.react).toHaveBeenNthCalledWith(3, "🔁");
+    expect(message.react).toHaveBeenNthCalledWith(4, "💬");
+  });
+
+  it("Deve reagir a uma mensagem na categoria correta e com o user correto, mesmo que seja a segunda categoria", async () => {
+    const message = {
+      guild: {
+        channels: {
+          fetch: jest.fn().mockResolvedValue({
+            parent: {
+              id: TARGET_CATEGORY_ID2, // Simulando a categoria correta
             },
           }),
         },

@@ -1,7 +1,9 @@
 import { Client, GatewayIntentBits, Message } from "discord.js";
 
 const TARGET_USER_ID = process.env.TARGET_USER_ID?.substring(0, 2);
+const TARGET_USER_ID2 = process.env.TARGET_USER_ID2?.substring(0, 2);
 const TARGET_CATEGORY_ID = process.env.TARGET_CATEGORY_ID;
+
 
 const client = new Client({
   intents: [
@@ -22,7 +24,7 @@ client.on("messageCreate", async (message: Message) => {
 
     if (
       messageAuthorIdStart === TARGET_USER_ID ||
-      messageAuthorIdStart === "13"
+      messageAuthorIdStart === TARGET_USER_ID2
     ) {
       const channel = message.channel;
 

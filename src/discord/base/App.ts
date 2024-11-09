@@ -1,6 +1,6 @@
 import { Command, Event, Responder, ResponderType, type ResponderInteraction } from "#base";
 import { log, onError } from "#settings";
-import { CustomItents, CustomPartials, spaceBuilder, toNull } from "@magicyan/discord";
+import { CustomItents, CustomPartials, spaceBuilder } from "@magicyan/discord";
 import ck from "chalk";
 import { CacheType, Client, type ClientOptions, version as djsVersion } from "discord.js";
 import glob from "fast-glob";
@@ -98,7 +98,7 @@ function createClient(token: string, options: BootstrapAppOptions): Client {
     client.on("ready", async (client) => {
         const messages: string[] = [];
         const addMessage = (text: string) => messages.push(text);
-        await client.guilds.fetch().catch(toNull);
+        await client.guilds.fetch();
 
         if (options.commands?.guilds){
             const guilds = client.guilds.cache.filter(

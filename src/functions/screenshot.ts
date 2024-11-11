@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer";
 
-export default async function takeScreenshot(
+export async function takeScreenshot(
     previousMessageContent: string,
     previousUserName: string,
     currentMessageContent: string,

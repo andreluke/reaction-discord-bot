@@ -1,3 +1,4 @@
+import { filterContent, mapName, removeSymbol } from "#functions";
 import puppeteer from "puppeteer";
 
 export async function takeScreenshot(
@@ -14,8 +15,18 @@ export async function takeScreenshot(
     const browser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
+
+    const authorUsername = mapName(currentUserName);
+    const quotedUsername = mapName(previousUserName);
   
     const page = await browser.newPage();
+
+   let previousMessage = removeSymbol(previousMessageContent || ""); // Garantir que content nunca seja undefined
+   let currentMessage = removeSymbol(currentMessageContent || ""); // Garantir que content nunca seja undefined
+
+  
+   previousMessage = filterContent(previousMessage);
+   currentMessage = filterContent(currentMessage);
   
     await page.setViewport({
       width: 600,
@@ -103,6 +114,15 @@ export async function takeScreenshot(
             flex-direction: row;
             align-items: center;
             }
+            .user-name{
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            }
+            .username{
+            font-size: 14;
+            color: #8899a6
+            }
             .private{
             font-size: 25;
             color: yellow;
@@ -115,7 +135,10 @@ export async function takeScreenshot(
             <div class="tweet-header">
               <div class="avatar" style="background-image: url('${currentProfileImageUrl}');"></div>
               <div class="user-info">
+                <div class="user-name">
                 <span class="name">${currentUserName}</span>
+                <span class="username">@${authorUsername}</span>
+                </div>
                 ${
               isPrivateQuote
                 // eslint-disable-next-line quotes
@@ -125,7 +148,7 @@ export async function takeScreenshot(
               </div>
             </div>
             <div class="tweet-content">
-              ${currentMessageContent}
+              ${currentMessage}
             </div>
             ${
               currentImageUrl
@@ -137,11 +160,14 @@ export async function takeScreenshot(
               <div class="quote-header">
                 <div class="quote-avatar" style="background-image: url('${previousProfileImageUrl}');"></div>
                 <div class="user-info">
-                  <span class="name">${previousUserName}</span>
+                   <div class="user-name">
+                <span class="name">${previousUserName}</span>
+                <span class="username">@${quotedUsername}</span>
+                </div>
                 </div>
               </div>
               <div class="quote-content">
-                ${previousMessageContent}
+                ${previousMessage}
               </div>
               ${
                 previousImageUrl
